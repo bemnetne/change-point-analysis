@@ -84,15 +84,29 @@ def build_change_point_model(observed_data):
 
 
 
-def sample_model(model):
+def sample_model(model, draws=1000, tune=1000, chains=4, cores=None, target_accept=0.9):
+    """
+    Sample from the model.
+
+    target_accept=0.9 (PyMC's own default is 0.8) is enough for this
+    compound discrete/continuous change-point model. Going to 0.95, as
+    this used to, forces much smaller NUTS step sizes and roughly
+    triples runtime on realistic-sized series without a meaningful gain
+    in sample quality.
+    """
+
+    if cores is None:
+        import os
+        cores = min(chains, os.cpu_count() or 1)
 
     with model:
 
         trace = pm.sample(
-            draws=2000,
-            tune=1000,
-            chains=4,
-            target_accept=0.95,
+            draws=draws,
+            tune=tune,
+            chains=chains,
+            cores=cores,
+            target_accept=target_accept,
             random_seed=42,
             return_inferencedata=True
         )
